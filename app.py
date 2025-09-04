@@ -6,20 +6,27 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # -------------------------
 # Page Config
 # -------------------------
-st.set_page_config(page_title="Diabetes Prediction", page_icon="🩺", layout="wide")
+st.set_page_config(page_title="Diabetes Predictor", page_icon="🩺", layout="wide")
 
 # -------------------------
 # Title
 # -------------------------
-st.title("🩺 Diabetes Prediction with KNN")
-st.markdown("This app uses a **K-Nearest Neighbors (KNN)** model trained on the **Pima Indians Diabetes dataset** to predict whether a patient is likely to have diabetes.")
+st.markdown(
+    """
+    <h1 style="text-align:center; color:#2E86C1;">🩺 Diabetes Prediction App</h1>
+    <p style="text-align:center; font-size:18px;">
+    Powered by <b>K-Nearest Neighbors (KNN)</b> model trained on the Pima Indians Diabetes dataset.
+    </p>
+    """,
+    unsafe_allow_html=True
+)
 
 # -------------------------
 # Load Data
@@ -49,46 +56,90 @@ y_pred = knn.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
 
 # -------------------------
-# Sidebar - Model Info
+# Sidebar Navigation
 # -------------------------
-st.sidebar.header("⚙️ Model Information")
-st.sidebar.write(f"**Accuracy on Test Set:** {acc:.2f}")
-st.sidebar.write("**Algorithm:** K-Nearest Neighbors")
-st.sidebar.write("**Dataset:** Pima Indians Diabetes")
+st.sidebar.title("⚙️ Navigation")
+page = st.sidebar.radio("Go to", ["🏠 Home", "🧑‍⚕️ Prediction", "📊 Model Performance"])
 
 # -------------------------
-# Two-column Layout
+# Home Page
 # -------------------------
-col1, col2 = st.columns(2)
+if page == "🏠 Home":
+    st.subheader("📖 About this App")
+    st.write("""
+    This web app predicts whether a patient is likely to have diabetes 
+    using **K-Nearest Neighbors (KNN)** classification.  
+    - Dataset: Pima Indians Diabetes Database  
+    - Features: Glucose, Blood Pressure, BMI, Age, etc.  
+    - Output: **Positive (1)** or **Negative (0)** for diabetes  
+    """)
+    st.write("📊 **Model Accuracy:**", round(acc * 100, 2), "%")
 
-with col1:
-    st.subheader("🔢 Enter Patient Details")
+    st.markdown("---")
+    st.subheader("📂 Dataset Preview")
+    st.dataframe(df.head())
 
-    preg = st.number_input("Pregnancies", min_value=0, max_value=20, step=1)
-    glucose = st.number_input("Glucose", min_value=0, max_value=200, step=1)
-    bp = st.number_input("Blood Pressure", min_value=0, max_value=150, step=1)
-    skin = st.number_input("Skin Thickness", min_value=0, max_value=100, step=1)
-    insulin = st.number_input("Insulin", min_value=0, max_value=900, step=1)
-    bmi = st.number_input("BMI", min_value=0.0, max_value=70.0, step=0.1)
-    dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0, max_value=3.0, step=0.01)
-    age = st.number_input("Age", min_value=1, max_value=120, step=1)
+# -------------------------
+# Prediction Page
+# -------------------------
+elif page == "🧑‍⚕️ Prediction":
+    st.subheader("🧑‍⚕️ Enter Patient Details")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        preg = st.number_input("Pregnancies", min_value=0, max_value=20, step=1)
+        glucose = st.number_input("Glucose", min_value=0, max_value=200, step=1)
+        bp = st.number_input("Blood Pressure", min_value=0, max_value=150, step=1)
+        skin = st.number_input("Skin Thickness", min_value=0, max_value=100, step=1)
+
+    with col2:
+        insulin = st.number_input("Insulin", min_value=0, max_value=900, step=1)
+        bmi = st.number_input("BMI", min_value=0.0, max_value=70.0, step=0.1)
+        dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0, max_value=3.0, step=0.01)
+        age = st.number_input("Age", min_value=1, max_value=120, step=1)
 
     if st.button("🔍 Predict"):
         input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
         input_scaled = scaler.transform(input_data)
         prediction = knn.predict(input_scaled)
 
+        st.markdown("---")
         if prediction[0] == 1:
-            st.error("⚠️ The model predicts: **Diabetes Positive**")
+            st.markdown(
+                """
+                <div style="padding:20px; background-color:#F1948A; border-radius:10px; text-align:center;">
+                <h2>⚠️ Result: Diabetes Positive</h2>
+                <p style="font-size:18px;">The model predicts this patient is <b>likely diabetic</b>.</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.success("✅ The model predicts: **No Diabetes**")
+            st.markdown(
+                """
+                <div style="padding:20px; background-color:#82E0AA; border-radius:10px; text-align:center;">
+                <h2>✅ Result: No Diabetes</h2>
+                <p style="font-size:18px;">The model predicts this patient is <b>not diabetic</b>.</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-with col2:
-    st.subheader("📊 Model Performance")
+# -------------------------
+# Model Performance Page
+# -------------------------
+elif page == "📊 Model Performance":
+    st.subheader("📊 Model Performance Metrics")
+
+    # Confusion Matrix
     cm = confusion_matrix(y_test, y_pred)
-
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(5, 4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["No Diabetes", "Diabetes"], yticklabels=["No Diabetes", "Diabetes"], ax=ax)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
     st.pyplot(fig)
+
+    # Classification Report
+    st.text("Classification Report:")
+    st.text(classification_report(y_test, y_pred, target_names=["No Diabetes", "Diabetes"]))
